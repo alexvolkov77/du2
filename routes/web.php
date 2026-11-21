@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HabitController;
 use App\Http\Controllers\TelegramAuthController;
+use App\Http\Controllers\TelegramWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Fallback for hosts serving assets from a document root outside Laravel/public.
@@ -19,6 +20,7 @@ Route::get('/images/du2-logo.webp', function () {
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::get('/telegram', [TelegramAuthController::class, 'index'])->name('telegram.index');
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])->name('telegram.webhook');
 Route::get('/telegram/email', [TelegramAuthController::class, 'emailLogin'])->name('telegram.email');
 Route::post('/telegram/session', [TelegramAuthController::class, 'authenticate'])
     ->middleware('throttle:12,1')->name('telegram.session');
