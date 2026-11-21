@@ -73,6 +73,67 @@ class TelegramReminderTest extends TestCase
         $this->assertSame('2026-11-23', $habit->fresh()->last_reminded_on->toDateString());
     }
 
+    public function test_two_minutes_late_reminder_is_delivered_once(): void
+    {
+        Carbon::setTestNow('2026-11-23 19:02:00 UTC'); // 20:02 in Warsaw
+        Http::fake(['https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => []])]);
+
+        $user = User::factory()->create(['timezone' => 'Europe/Warsaw']);
+        UserIdentity::create([
+            'user_id' => $user->id,
+            'provider' => 'telegram',
+            'provider_user_id' => '12001',
+            'telegram_chat_id' => '12001',
+        ]);
+        $habit = Habit::create([
+            'name' => 'Упражнение',
+            'user_id' => $user->id,
+            'reminder_enabled' => true,
+            'reminder_time' => '20:00',
+        ]);
+
+        $sender = app(HabitReminderSender::class);
+        $this->assertSame(1, $sender->sendDue());
+        $this->assertSame(0, $sender->sendDue());
+        Http::assertSentCount(1);
+        $this->assertSame('2026-11-23', $habit->fresh()->last_reminded_on->toDateString());
+    }
+
+    public function test_reminder_more_than_fifteen_minutes_late_is_not_sent(): void
+    {
+        Carbon::setTestNow('2026-11-23 19:16:00 UTC'); // 20:16 in Warsaw
+        Http::fake(['https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => []])]);
+
+        $user = User::factory()->create(['timezone' => 'Europe/Warsaw']);
+        UserIdentity::create([
+            'user_id' => $user->id,
+            'provider' => 'telegram',
+            'provider_user_id' => '12001',
+            'telegram_chat_id' => '12001',
+        ]);
+        Habit::create([
+            'name' => 'Упражнение',
+            'user_id' => $user->id,
+            'reminder_enabled' => true,
+            'reminder_time' => '20:00',
+        ]);
+
+        $this->assertSame(0, app(HabitReminderSender::class)->sendDue());
+        Http::assertNothingSent();
+    }
+
+    public function test_status_reports_successful_scheduler_run(): void
+    {
+        Carbon::setTestNow('2026-11-23 19:02:00 UTC');
+
+        $this->artisan('habits:send-reminders')->assertSuccessful();
+
+        $this->artisan('habits:reminders-status')
+            ->expectsOutputToContain('Run status: ok')
+            ->expectsOutputToContain('Reminders sent in last run: 0')
+            ->assertSuccessful();
+    }
+
     public function test_webhook_rejects_invalid_secret_and_links_start(): void
     {
         Http::fake(['https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => []])]);

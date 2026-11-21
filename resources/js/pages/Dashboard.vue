@@ -138,7 +138,9 @@ function saveReminder(habit: Habit, enabled: boolean, time: string) {
 
 function updateReminderTime(habit: Habit, event: Event) {
     const input = event.target as HTMLInputElement;
-    saveReminder(habit, habit.reminder_enabled, input.value);
+    // Selecting a reminder time enables the reminder, even if a checkbox
+    // request is still in flight and the props have not updated yet.
+    saveReminder(habit, true, input.value);
 }
 
 function remove(habit: Habit) {
@@ -283,7 +285,7 @@ function remove(habit: Habit) {
                         Напоминать в Telegram
                     </label>
                     <label class="flex items-center gap-2">
-                        <span class="text-muted-foreground">Время</span>
+                        <span class="text-muted-foreground">Время (выбор включает напоминание)</span>
                         <input
                             type="time"
                             :value="habit.reminder_time"

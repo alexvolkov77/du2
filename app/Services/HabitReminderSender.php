@@ -37,7 +37,13 @@ final class HabitReminderSender
 
                     $date = $now->toDateString();
 
-                    if ($now->format('H:i') !== $habit->reminder_time
+                    // A scheduler tick can be late. Deliver once within 15 minutes
+                    // of the configured local time instead of missing the whole day.
+                    $nowMinutes = $now->hour * 60 + $now->minute;
+                    [$dueHour, $dueMinute] = array_map('intval', explode(':', (string) $habit->reminder_time));
+                    $minutesLate = $nowMinutes - ($dueHour * 60 + $dueMinute);
+
+                    if ($minutesLate < 0 || $minutesLate > 15
                         || $habit->created_at->setTimezone($now->timezone)->toDateString() > $date
                         || ! $habit->isScheduledOn($now)
                         || $habit->checkins()->where('local_date', $date)->exists()) {
