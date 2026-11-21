@@ -7,9 +7,15 @@ use RuntimeException;
 
 final class TelegramBot
 {
-    public function secret(): string
+    public function n8nBridgeKey(): string
     {
-        return substr(hash_hmac('sha256', 'du2-telegram-webhook', (string) config('telegram.bot_token')), 0, 48);
+        $appKey = (string) config('app.key');
+
+        if (strlen($appKey) < 24) {
+            throw new RuntimeException('APP_KEY is required for the n8n bridge.');
+        }
+
+        return hash_hmac('sha256', 'du2-n8n-bridge-v1', $appKey);
     }
 
     /** @return array<string, mixed> */

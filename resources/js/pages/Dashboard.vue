@@ -170,7 +170,7 @@ function remove(habit: Habit) {
                 <a class="font-medium text-[#5386e4] underline" href="https://t.me/softskillsimprovement_bot?start=reminders" target="_blank" rel="noopener noreferrer">
                     @softskillsimprovement_bot
                 </a>,
-                войди в свой аккаунт через Mini App и отправь боту /start.
+                войди в свой аккаунт через Mini App и отправь боту /du2start.
             </p>
 
             <div class="mt-5 h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">

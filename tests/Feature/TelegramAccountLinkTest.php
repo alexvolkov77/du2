@@ -47,8 +47,8 @@ class TelegramAccountLinkTest extends TestCase
 
     private function sendStart(string $token, string $telegramId): void
     {
-        $this->withHeader('X-Telegram-Bot-Api-Secret-Token', app(TelegramBot::class)->secret())
-            ->postJson('/telegram/webhook', [
+        $this->withHeader('X-DU2-N8N-Key', app(TelegramBot::class)->n8nBridgeKey())
+            ->postJson('/api/integrations/n8n/telegram', [
                 'message' => [
                     'text' => '/start link_'.$token,
                     'from' => ['id' => (int) $telegramId],

@@ -83,14 +83,14 @@ class TelegramReminderTest extends TestCase
         ]);
 
         $payload = ['message' => [
-            'text' => '/start',
+            'text' => '/du2start',
             'from' => ['id' => 12001],
             'chat' => ['id' => 12001, 'type' => 'private'],
         ]];
 
-        $this->postJson('/telegram/webhook', $payload)->assertForbidden();
-        $this->withHeader('X-Telegram-Bot-Api-Secret-Token', app(TelegramBot::class)->secret())
-            ->postJson('/telegram/webhook', $payload)->assertOk();
+        $this->postJson('/api/integrations/n8n/telegram', $payload)->assertForbidden();
+        $this->withHeader('X-DU2-N8N-Key', app(TelegramBot::class)->n8nBridgeKey())
+            ->postJson('/api/integrations/n8n/telegram', $payload)->assertOk();
 
         $this->assertSame('12001', $identity->fresh()->telegram_chat_id);
     }
@@ -121,11 +121,11 @@ class TelegramReminderTest extends TestCase
             ],
         ];
 
-        $this->withHeader('X-Telegram-Bot-Api-Secret-Token', app(TelegramBot::class)->secret())
-            ->postJson('/telegram/webhook', $callback)->assertOk();
+        $this->withHeader('X-DU2-N8N-Key', app(TelegramBot::class)->n8nBridgeKey())
+            ->postJson('/api/integrations/n8n/telegram', $callback)->assertOk();
         $this->assertDatabaseCount('habit_checkins', 1);
 
-        $this->postJson('/telegram/webhook', $callback)->assertOk();
+        $this->postJson('/api/integrations/n8n/telegram', $callback)->assertOk();
         $this->assertDatabaseCount('habit_checkins', 1);
     }
 }

@@ -121,10 +121,7 @@ php artisan optimize:clear
 php artisan config:cache
 php artisan view:cache
 
-echo "[9/10] Подключение Telegram webhook"
-php artisan telegram:configure-webhook
-
-echo "[10/10] Настройка Laravel scheduler (раз в минуту)"
+echo "[9/9] Настройка Laravel scheduler (раз в минуту)"
 if ! command -v crontab >/dev/null 2>&1; then
     echo "Не найден crontab: необходимо настроить запуск php artisan schedule:run каждую минуту." >&2
     exit 1
