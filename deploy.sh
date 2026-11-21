@@ -64,17 +64,13 @@ LOGO_SOURCE="$APP_DIR/public/images/du2-logo.webp"
 LOGO_PUBLIC="$WEBROOT/images/du2-logo.webp"
 ICON_SOURCE="$APP_DIR/public/favicon.ico"
 ICON_PUBLIC="$WEBROOT/favicon.ico"
-ICON_SVG_SOURCE="$APP_DIR/public/favicon.svg"
-ICON_SVG_PUBLIC="$WEBROOT/favicon.svg"
-BRAND_SVG_SOURCE="$APP_DIR/public/du2-brain.svg"
-BRAND_SVG_PUBLIC="$WEBROOT/du2-brain.svg"
 APPLE_ICON_SOURCE="$APP_DIR/public/apple-touch-icon.png"
 APPLE_ICON_PUBLIC="$WEBROOT/apple-touch-icon.png"
 if [[ ! -s "$ICON_SOURCE" ]]; then
     echo "Отсутствует favicon.ico в Git checkout: $ICON_SOURCE" >&2
     exit 1
 fi
-for asset in "$ICON_SVG_SOURCE" "$BRAND_SVG_SOURCE" "$APPLE_ICON_SOURCE"; do
+for asset in "$APPLE_ICON_SOURCE"; do
     if [[ ! -s "$asset" ]]; then
         echo "Отсутствует иконка в Git checkout: $asset" >&2
         exit 1
@@ -93,8 +89,6 @@ if [[ "$WEBROOT" != "$(cd "$APP_DIR/public" && pwd -P)" ]]; then
     mkdir -p "$WEBROOT/images"
     cp -a "$APP_DIR/public/images/." "$WEBROOT/images/"
     cp -a "$ICON_SOURCE" "$ICON_PUBLIC"
-    cp -f "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"
-    cp -f "$BRAND_SVG_SOURCE" "$BRAND_SVG_PUBLIC"
     cp -a "$APPLE_ICON_SOURCE" "$APPLE_ICON_PUBLIC"
 fi
 
@@ -104,14 +98,6 @@ if [[ ! -s "$LOGO_PUBLIC" ]] || ! cmp -s "$LOGO_SOURCE" "$LOGO_PUBLIC"; then
 fi
 if [[ ! -s "$ICON_PUBLIC" ]] || ! cmp -s "$ICON_SOURCE" "$ICON_PUBLIC"; then
     echo "Не удалось опубликовать favicon.ico: $ICON_PUBLIC" >&2
-    exit 1
-fi
-if [[ ! -s "$ICON_SVG_PUBLIC" ]] || ! cmp -s "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"; then
-    echo "Не удалось опубликовать favicon.svg: $ICON_SVG_PUBLIC" >&2
-    exit 1
-fi
-if [[ ! -s "$BRAND_SVG_PUBLIC" ]] || ! cmp -s "$BRAND_SVG_SOURCE" "$BRAND_SVG_PUBLIC"; then
-    echo "Не удалось опубликовать du2-brain.svg: $BRAND_SVG_PUBLIC" >&2
     exit 1
 fi
 if [[ ! -s "$APPLE_ICON_PUBLIC" ]] || ! cmp -s "$APPLE_ICON_SOURCE" "$APPLE_ICON_PUBLIC"; then
@@ -156,7 +142,7 @@ fi
 verify_icon_response() {
     local path="$1"
     local expected="$2"
-    local url="https://$DOMAIN/$path?v=20261122b"
+    local url="https://$DOMAIN/$path?v=20261122c"
     local downloaded
     downloaded="$(mktemp)"
     if ! curl -kLfsS --max-time 20 -H 'Cache-Control: no-cache' -o "$downloaded" "$url"; then
@@ -174,8 +160,6 @@ verify_icon_response() {
     echo "Фирменная иконка подтверждена: $url"
 }
 verify_icon_response "favicon.ico" "$ICON_SOURCE"
-verify_icon_response "favicon.svg" "$ICON_SVG_SOURCE"
-verify_icon_response "du2-brain.svg" "$BRAND_SVG_SOURCE"
 verify_icon_response "apple-touch-icon.png" "$APPLE_ICON_SOURCE"
 
 echo "[7/8] Миграции"
