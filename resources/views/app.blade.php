@@ -30,8 +30,9 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico?v=20261121" type="image/x-icon">
-        <link rel="apple-touch-icon" href="/images/du2-logo.webp">
+        <link rel="icon" href="/favicon.ico?v=20261122" type="image/x-icon" sizes="16x16 32x32 48x48">
+        <link rel="icon" href="/favicon.svg?v=20261122" type="image/svg+xml" sizes="any">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261122" sizes="180x180">
 
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
 

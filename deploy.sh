@@ -64,10 +64,20 @@ LOGO_SOURCE="$APP_DIR/public/images/du2-logo.webp"
 LOGO_PUBLIC="$WEBROOT/images/du2-logo.webp"
 ICON_SOURCE="$APP_DIR/public/favicon.ico"
 ICON_PUBLIC="$WEBROOT/favicon.ico"
+ICON_SVG_SOURCE="$APP_DIR/public/favicon.svg"
+ICON_SVG_PUBLIC="$WEBROOT/favicon.svg"
+APPLE_ICON_SOURCE="$APP_DIR/public/apple-touch-icon.png"
+APPLE_ICON_PUBLIC="$WEBROOT/apple-touch-icon.png"
 if [[ ! -s "$ICON_SOURCE" ]]; then
     echo "Отсутствует favicon.ico в Git checkout: $ICON_SOURCE" >&2
     exit 1
 fi
+for asset in "$ICON_SVG_SOURCE" "$APPLE_ICON_SOURCE"; do
+    if [[ ! -s "$asset" ]]; then
+        echo "Отсутствует иконка в Git checkout: $asset" >&2
+        exit 1
+    fi
+done
 if [[ ! -s "$LOGO_SOURCE" ]]; then
     echo "Отсутствует логотип в Git checkout: $LOGO_SOURCE" >&2
     exit 1
@@ -81,6 +91,8 @@ if [[ "$WEBROOT" != "$(cd "$APP_DIR/public" && pwd -P)" ]]; then
     mkdir -p "$WEBROOT/images"
     cp -a "$APP_DIR/public/images/." "$WEBROOT/images/"
     cp -a "$ICON_SOURCE" "$ICON_PUBLIC"
+    cp -a "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"
+    cp -a "$APPLE_ICON_SOURCE" "$APPLE_ICON_PUBLIC"
 fi
 
 if [[ ! -s "$LOGO_PUBLIC" ]] || ! cmp -s "$LOGO_SOURCE" "$LOGO_PUBLIC"; then
@@ -89,6 +101,14 @@ if [[ ! -s "$LOGO_PUBLIC" ]] || ! cmp -s "$LOGO_SOURCE" "$LOGO_PUBLIC"; then
 fi
 if [[ ! -s "$ICON_PUBLIC" ]] || ! cmp -s "$ICON_SOURCE" "$ICON_PUBLIC"; then
     echo "Не удалось опубликовать favicon.ico: $ICON_PUBLIC" >&2
+    exit 1
+fi
+if [[ ! -s "$ICON_SVG_PUBLIC" ]] || ! cmp -s "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"; then
+    echo "Не удалось опубликовать favicon.svg: $ICON_SVG_PUBLIC" >&2
+    exit 1
+fi
+if [[ ! -s "$APPLE_ICON_PUBLIC" ]] || ! cmp -s "$APPLE_ICON_SOURCE" "$APPLE_ICON_PUBLIC"; then
+    echo "Не удалось опубликовать apple-touch-icon.png: $APPLE_ICON_PUBLIC" >&2
     exit 1
 fi
 echo "Опубликовано: $WEBROOT/build и $LOGO_PUBLIC", $ICON_PUBLIC
@@ -124,13 +144,15 @@ if [[ "$logo_status" != 200 ]]; then
     exit 1
 fi
 
-ICON_URL="https://$DOMAIN/favicon.ico?v=20261121"
-icon_status="$(curl -kLsS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Cache-Control: no-cache' "$ICON_URL")" || true
-echo "HTTP $icon_status: $ICON_URL"
-if [[ "$icon_status" != 200 ]]; then
-    echo "Favicon скопирован в $ICON_PUBLIC, но URL возвращает HTTP $icon_status." >&2
-    exit 1
-fi
+for icon_path in "favicon.ico" "favicon.svg" "apple-touch-icon.png"; do
+    ICON_URL="https://$DOMAIN/$icon_path?v=20261122"
+    icon_status="$(curl -kLsS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Cache-Control: no-cache' "$ICON_URL")" || true
+    echo "HTTP $icon_status: $ICON_URL"
+    if [[ "$icon_status" != 200 ]]; then
+        echo "Иконка скопирована, но URL возвращает HTTP $icon_status: $ICON_URL." >&2
+        exit 1
+    fi
+done
 
 echo "[7/8] Миграции"
 php artisan migrate --force
