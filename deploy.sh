@@ -128,12 +128,24 @@ if ! command -v crontab >/dev/null 2>&1; then
 fi
 CRON_TAG="# du2-habits-scheduler"
 existing_crontab="$(crontab -l 2>/dev/null || true)"
-if ! grep -Fq "$CRON_TAG" <<< "$existing_crontab"; then
-    safe_app_dir="$(printf '%q' "$APP_DIR")"
-    php_bin="$(command -v php)"
-    cron_line="* * * * * cd $safe_app_dir && $php_bin artisan schedule:run >/dev/null 2>&1 $CRON_TAG"
-    printf '%s\n%s\n' "$existing_crontab" "$cron_line" | crontab -
+safe_app_dir="$(printf '%q' "$APP_DIR")"
+php_bin="$(command -v php)"
+mkdir -p "$APP_DIR/storage/logs"
+cron_line="* * * * * cd $safe_app_dir && $php_bin artisan schedule:run >/dev/null 2>> $safe_app_dir/storage/logs/du2-scheduler-errors.log $CRON_TAG"
+
+# Replace an older DU2 cron entry, but keep unrelated cron jobs unchanged.
+if grep -Fq "$CRON_TAG" <<< "$existing_crontab"; then
+    existing_crontab="$(printf '%s\n' "$existing_crontab" | grep -vF "$CRON_TAG" || true)"
 fi
+printf '%s\n%s\n' "$existing_crontab" "$cron_line" | crontab -
 crontab -l | grep -F "$CRON_TAG"
+
+echo "Проверка регистрации задачи Laravel:"
+php artisan schedule:list | grep -F 'habits:send-reminders' || {
+    echo "Laravel scheduler не содержит habits:send-reminders." >&2
+    exit 1
+}
+echo "Диагностика последнего запуска:"
+php artisan habits:reminders-status
 
 echo "Релиз установлен: $(git rev-parse --short HEAD) · https://$DOMAIN"
