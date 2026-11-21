@@ -63,8 +63,14 @@ fi
 if [[ "$WEBROOT" != "$(cd "$APP_DIR/public" && pwd -P)" ]]; then
     mkdir -p "$WEBROOT/build"
     cp -a "$APP_DIR/public/build/." "$WEBROOT/build/"
+
+    # Publish local brand images when the hosting webroot is separate.
+    if [[ -d "$APP_DIR/public/images" ]]; then
+        mkdir -p "$WEBROOT/images"
+        cp -a "$APP_DIR/public/images/." "$WEBROOT/images/"
+    fi
 fi
-echo "Опубликовано: $WEBROOT/build"
+echo "Опубликовано: $WEBROOT/build и статические изображения"
 
 echo "[6/8] Проверка доступности CSS и JS через сайт"
 mapfile -t assets < <(php -r '
