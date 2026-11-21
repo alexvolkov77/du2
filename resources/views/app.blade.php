@@ -30,7 +30,7 @@
             }
         </style>
 
-        <link rel="icon" href="/images/du2-logo.webp" type="image/webp">
+        <link rel="icon" href="/favicon.ico?v=20261121" type="image/x-icon">
         <link rel="apple-touch-icon" href="/images/du2-logo.webp">
 
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
