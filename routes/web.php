@@ -26,6 +26,7 @@ Route::post('/telegram/session', [TelegramAuthController::class, 'authenticate']
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [HabitController::class, 'index'])->name('dashboard');
     Route::post('/habits', [HabitController::class, 'store'])->name('habits.store');
+    Route::patch('/habits/{habit}', [HabitController::class, 'update'])->name('habits.update');
     Route::delete('/habits/{habit}', [HabitController::class, 'destroy'])->name('habits.destroy');
     Route::post('/habits/{habit}/complete', [HabitController::class, 'complete'])->name('habits.complete');
     Route::delete('/habits/{habit}/complete', [HabitController::class, 'uncomplete'])->name('habits.uncomplete');
