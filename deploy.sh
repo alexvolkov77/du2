@@ -66,13 +66,15 @@ ICON_SOURCE="$APP_DIR/public/favicon.ico"
 ICON_PUBLIC="$WEBROOT/favicon.ico"
 ICON_SVG_SOURCE="$APP_DIR/public/favicon.svg"
 ICON_SVG_PUBLIC="$WEBROOT/favicon.svg"
+BRAND_SVG_SOURCE="$APP_DIR/public/du2-brain.svg"
+BRAND_SVG_PUBLIC="$WEBROOT/du2-brain.svg"
 APPLE_ICON_SOURCE="$APP_DIR/public/apple-touch-icon.png"
 APPLE_ICON_PUBLIC="$WEBROOT/apple-touch-icon.png"
 if [[ ! -s "$ICON_SOURCE" ]]; then
     echo "Отсутствует favicon.ico в Git checkout: $ICON_SOURCE" >&2
     exit 1
 fi
-for asset in "$ICON_SVG_SOURCE" "$APPLE_ICON_SOURCE"; do
+for asset in "$ICON_SVG_SOURCE" "$BRAND_SVG_SOURCE" "$APPLE_ICON_SOURCE"; do
     if [[ ! -s "$asset" ]]; then
         echo "Отсутствует иконка в Git checkout: $asset" >&2
         exit 1
@@ -91,7 +93,8 @@ if [[ "$WEBROOT" != "$(cd "$APP_DIR/public" && pwd -P)" ]]; then
     mkdir -p "$WEBROOT/images"
     cp -a "$APP_DIR/public/images/." "$WEBROOT/images/"
     cp -a "$ICON_SOURCE" "$ICON_PUBLIC"
-    cp -a "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"
+    cp -f "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"
+    cp -f "$BRAND_SVG_SOURCE" "$BRAND_SVG_PUBLIC"
     cp -a "$APPLE_ICON_SOURCE" "$APPLE_ICON_PUBLIC"
 fi
 
@@ -105,6 +108,10 @@ if [[ ! -s "$ICON_PUBLIC" ]] || ! cmp -s "$ICON_SOURCE" "$ICON_PUBLIC"; then
 fi
 if [[ ! -s "$ICON_SVG_PUBLIC" ]] || ! cmp -s "$ICON_SVG_SOURCE" "$ICON_SVG_PUBLIC"; then
     echo "Не удалось опубликовать favicon.svg: $ICON_SVG_PUBLIC" >&2
+    exit 1
+fi
+if [[ ! -s "$BRAND_SVG_PUBLIC" ]] || ! cmp -s "$BRAND_SVG_SOURCE" "$BRAND_SVG_PUBLIC"; then
+    echo "Не удалось опубликовать du2-brain.svg: $BRAND_SVG_PUBLIC" >&2
     exit 1
 fi
 if [[ ! -s "$APPLE_ICON_PUBLIC" ]] || ! cmp -s "$APPLE_ICON_SOURCE" "$APPLE_ICON_PUBLIC"; then
@@ -144,15 +151,32 @@ if [[ "$logo_status" != 200 ]]; then
     exit 1
 fi
 
-for icon_path in "favicon.ico" "favicon.svg" "apple-touch-icon.png"; do
-    ICON_URL="https://$DOMAIN/$icon_path?v=20261122"
-    icon_status="$(curl -kLsS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Cache-Control: no-cache' "$ICON_URL")" || true
-    echo "HTTP $icon_status: $ICON_URL"
-    if [[ "$icon_status" != 200 ]]; then
-        echo "Иконка скопирована, но URL возвращает HTTP $icon_status: $ICON_URL." >&2
-        exit 1
+# Validate actual bytes served by the web server, not just HTTP 200.
+# This catches stale Laravel icons from another document root or an intermediary cache.
+verify_icon_response() {
+    local path="$1"
+    local expected="$2"
+    local url="https://$DOMAIN/$path?v=20261122b"
+    local downloaded
+    downloaded="$(mktemp)"
+    if ! curl -kLfsS --max-time 20 -H 'Cache-Control: no-cache' -o "$downloaded" "$url"; then
+        rm -f "$downloaded"
+        echo "Не удалось скачать иконку с сайта: $url" >&2
+        return 1
     fi
-done
+    if ! cmp -s "$expected" "$downloaded"; then
+        rm -f "$downloaded"
+        echo "Иконка на сайте НЕ совпадает с репозиторием: $url" >&2
+        echo "Проверь кеш хостинга/CDN и фактический document root: $WEBROOT" >&2
+        return 1
+    fi
+    rm -f "$downloaded"
+    echo "Фирменная иконка подтверждена: $url"
+}
+verify_icon_response "favicon.ico" "$ICON_SOURCE"
+verify_icon_response "favicon.svg" "$ICON_SVG_SOURCE"
+verify_icon_response "du2-brain.svg" "$BRAND_SVG_SOURCE"
+verify_icon_response "apple-touch-icon.png" "$APPLE_ICON_SOURCE"
 
 echo "[7/8] Миграции"
 php artisan migrate --force
