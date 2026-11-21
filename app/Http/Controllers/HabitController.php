@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Habit;
+use App\Models\UserIdentity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -67,6 +68,8 @@ class HabitController extends Controller
                     'completed_7_days' => $week->where('completed', true)->count(),
                     'scheduled_7_days' => $week->where('scheduled', true)->count(),
                     'history' => $history,
+                    'reminder_enabled' => (bool) $habit->reminder_enabled,
+                    'reminder_time' => $habit->reminder_time,
                 ];
             });
 
@@ -74,6 +77,10 @@ class HabitController extends Controller
             'habits' => $habits,
             'today' => $to,
             'timezone' => $timezone,
+            'telegram_reminders_ready' => UserIdentity::query()
+                ->where('provider', 'telegram')
+                ->where('user_id', $user->id)
+                ->whereNotNull('telegram_chat_id')->exists(),
         ]);
     }
 
@@ -96,6 +103,31 @@ class HabitController extends Controller
     {
         $this->assertOwnership($request, $habit);
         $habit->update($this->validatedHabit($request));
+
+        return back();
+    }
+
+    public function configureReminder(Request $request, Habit $habit): RedirectResponse
+    {
+        $this->assertOwnership($request, $habit);
+
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'time' => ['required', 'date_format:H:i'],
+            'timezone' => ['sometimes', 'timezone'],
+        ]);
+
+        if (isset($data['timezone'])) {
+            $user = $request->user();
+            if ($user->timezone !== $data['timezone']) {
+                $user->forceFill(['timezone' => $data['timezone']])->save();
+            }
+        }
+
+        $habit->update([
+            'reminder_enabled' => $data['enabled'],
+            'reminder_time' => $data['time'],
+        ]);
 
         return back();
     }

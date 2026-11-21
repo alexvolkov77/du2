@@ -9,11 +9,15 @@ use Illuminate\Support\Carbon;
 
 class Habit extends Model
 {
-    protected $fillable = ['name', 'user_id', 'schedule_type', 'schedule_days'];
+    protected $fillable = ['name', 'user_id', 'schedule_type', 'schedule_days', 'reminder_enabled', 'reminder_time', 'last_reminded_on'];
 
     protected function casts(): array
     {
-        return ['schedule_days' => 'array'];
+        return [
+            'schedule_days' => 'array',
+            'reminder_enabled' => 'boolean',
+            'last_reminded_on' => 'date:Y-m-d',
+        ];
     }
 
     public function isScheduledOn(Carbon $date): bool

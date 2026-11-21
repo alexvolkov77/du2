@@ -19,9 +19,11 @@ type Habit = {
     completed_7_days: number;
     scheduled_7_days: number;
     history: HistoryDay[];
+    reminder_enabled: boolean;
+    reminder_time: string;
 };
 
-const props = defineProps<{ habits: Habit[]; today: string; timezone: string }>();
+const props = defineProps<{ habits: Habit[]; today: string; timezone: string; telegram_reminders_ready: boolean }>();
 const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 const weekdays = [
@@ -120,6 +122,25 @@ function toggle(habit: Habit) {
     });
 }
 
+function saveReminder(habit: Habit, enabled: boolean, time: string) {
+    actionError.value = '';
+    router.patch(`/habits/${habit.id}/reminder`, {
+        enabled,
+        time,
+        timezone: browserTimezone,
+    }, {
+        preserveScroll: true,
+        onError: (errors) => {
+            actionError.value = errors.time || errors.enabled || 'Не удалось сохранить напоминание.';
+        },
+    });
+}
+
+function updateReminderTime(habit: Habit, event: Event) {
+    const input = event.target as HTMLInputElement;
+    saveReminder(habit, habit.reminder_enabled, input.value);
+}
+
 function remove(habit: Habit) {
     if (!confirm(`Удалить привычку «${habit.name}» и все её отметки?`)) return;
     router.delete(`/habits/${habit.id}`, {
@@ -140,6 +161,14 @@ function remove(habit: Habit) {
             <p class="mt-2 text-sm text-muted-foreground">
                 Сегодня выполнено {{ doneToday }} из {{ todayHabits.length }} запланированных.
             </p>
+            <p v-if="!telegram_reminders_ready" class="mt-3 text-sm text-muted-foreground">
+                Для доставки напоминаний открой
+                <a class="font-medium text-[#5386e4] underline" href="https://t.me/softskillsimprovement_bot?start=reminders" target="_blank" rel="noopener noreferrer">
+                    @softskillsimprovement_bot
+                </a>,
+                войди в свой аккаунт через Mini App и отправь боту /start.
+            </p>
+
             <div class="mt-5 h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
                 <div
                     class="h-full rounded-full bg-[#5386e4] transition-all"
@@ -238,6 +267,29 @@ function remove(habit: Habit) {
                     <button type="button" class="rounded-lg px-2 py-2 text-xs text-muted-foreground hover:bg-neutral-100 hover:text-red-600 dark:hover:bg-neutral-800" @click="remove(habit)">
                         Удалить
                     </button>
+                </div>
+
+                <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-[#5386e4]/5 px-3 py-2.5 text-sm dark:bg-[#5386e4]/10">
+                    <label class="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            :checked="habit.reminder_enabled"
+                            @change="saveReminder(habit, !habit.reminder_enabled, habit.reminder_time)"
+                        />
+                        Напоминать в Telegram
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <span class="text-muted-foreground">Время</span>
+                        <input
+                            type="time"
+                            :value="habit.reminder_time"
+                            class="rounded-lg border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                            @change="updateReminderTime(habit, $event)"
+                        />
+                    </label>
+                    <span v-if="habit.reminder_enabled" class="text-xs text-muted-foreground">
+                        По расписанию · {{ browserTimezone }}
+                    </span>
                 </div>
 
                 <form v-if="editingId === habit.id" class="mt-4 space-y-3 rounded-xl bg-neutral-50 p-4 dark:bg-neutral-900" @submit.prevent="saveEdit">

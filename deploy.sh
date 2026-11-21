@@ -121,4 +121,22 @@ php artisan optimize:clear
 php artisan config:cache
 php artisan view:cache
 
+echo "[9/10] Подключение Telegram webhook"
+php artisan telegram:configure-webhook
+
+echo "[10/10] Настройка Laravel scheduler (раз в минуту)"
+if ! command -v crontab >/dev/null 2>&1; then
+    echo "Не найден crontab: необходимо настроить запуск php artisan schedule:run каждую минуту." >&2
+    exit 1
+fi
+CRON_TAG="# du2-habits-scheduler"
+existing_crontab="$(crontab -l 2>/dev/null || true)"
+if ! grep -Fq "$CRON_TAG" <<< "$existing_crontab"; then
+    safe_app_dir="$(printf '%q' "$APP_DIR")"
+    php_bin="$(command -v php)"
+    cron_line="* * * * * cd $safe_app_dir && $php_bin artisan schedule:run >/dev/null 2>&1 $CRON_TAG"
+    printf '%s\n%s\n' "$existing_crontab" "$cron_line" | crontab -
+fi
+crontab -l | grep -F "$CRON_TAG"
+
 echo "Релиз установлен: $(git rev-parse --short HEAD) · https://$DOMAIN"
