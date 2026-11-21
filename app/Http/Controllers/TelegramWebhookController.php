@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Habit;
 use App\Models\UserIdentity;
 use App\Services\TelegramBot;
+use App\Services\TelegramAccountLinker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -45,6 +46,20 @@ class TelegramWebhookController extends Controller
         }
 
         if (! preg_match('/^\/(start|stop)(?:@softskillsimprovement_bot)?(?:\s|$)/i', $command, $matches)) {
+            return;
+        }
+
+        if (preg_match('/^\\/start(?:@softskillsimprovement_bot)?\\s+link_([0-9a-f]{48})\\s*$/i', $command, $tokenMatches)) {
+            $result = app(TelegramAccountLinker::class)->consume(strtolower($tokenMatches[1]), $fromId, $chatId);
+
+            $this->safeCall($bot, 'sendMessage', [
+                'chat_id' => $chatId,
+                'text' => $result,
+                'reply_markup' => ['inline_keyboard' => [[
+                    ['text' => 'Открыть трекер', 'url' => 'https://lk.du2.ru/telegram'],
+                ]]],
+            ]);
+
             return;
         }
 

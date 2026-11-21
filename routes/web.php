@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HabitController;
 use App\Http\Controllers\TelegramAuthController;
+use App\Http\Controllers\TelegramLinkController;
 use App\Http\Controllers\TelegramWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,8 @@ Route::post('/telegram/session', [TelegramAuthController::class, 'authenticate']
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [HabitController::class, 'index'])->name('dashboard');
+    Route::get('/settings/telegram', [TelegramLinkController::class, 'show'])->name('telegram.link.show');
+    Route::post('/settings/telegram/link', [TelegramLinkController::class, 'create'])->middleware('throttle:5,1')->name('telegram.link.create');
     Route::post('/habits', [HabitController::class, 'store'])->name('habits.store');
     Route::patch('/habits/{habit}', [HabitController::class, 'update'])->name('habits.update');
     Route::patch('/habits/{habit}/reminder', [HabitController::class, 'configureReminder'])->name('habits.reminder');

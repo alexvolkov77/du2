@@ -77,6 +77,10 @@ class HabitController extends Controller
             'habits' => $habits,
             'today' => $to,
             'timezone' => $timezone,
+            'telegram_linked' => UserIdentity::query()
+                ->where('provider', 'telegram')
+                ->where('user_id', $user->id)
+                ->exists(),
             'telegram_reminders_ready' => UserIdentity::query()
                 ->where('provider', 'telegram')
                 ->where('user_id', $user->id)

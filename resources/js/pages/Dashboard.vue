@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 
 type ScheduleType = 'daily' | 'weekly';
@@ -23,7 +23,7 @@ type Habit = {
     reminder_time: string;
 };
 
-const props = defineProps<{ habits: Habit[]; today: string; timezone: string; telegram_reminders_ready: boolean }>();
+const props = defineProps<{ habits: Habit[]; today: string; timezone: string; telegram_reminders_ready: boolean; telegram_linked: boolean }>();
 const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 const weekdays = [
@@ -161,7 +161,11 @@ function remove(habit: Habit) {
             <p class="mt-2 text-sm text-muted-foreground">
                 Сегодня выполнено {{ doneToday }} из {{ todayHabits.length }} запланированных.
             </p>
-            <p v-if="!telegram_reminders_ready" class="mt-3 text-sm text-muted-foreground">
+            <div v-if="!telegram_linked" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#5386e4]/30 bg-[#5386e4]/5 p-4">
+                <p class="text-sm">Привяжи Telegram к своему аккаунту — привычки и отметки сохранятся.</p>
+                <Link href="/settings/telegram" class="rounded-lg bg-[#5386e4] px-4 py-2 text-sm font-semibold text-white">Привязать Telegram</Link>
+            </div>
+            <p v-else-if="!telegram_reminders_ready" class="mt-3 text-sm text-muted-foreground">
                 Для доставки напоминаний открой
                 <a class="font-medium text-[#5386e4] underline" href="https://t.me/softskillsimprovement_bot?start=reminders" target="_blank" rel="noopener noreferrer">
                     @softskillsimprovement_bot
