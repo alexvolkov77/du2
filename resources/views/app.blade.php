@@ -30,8 +30,8 @@
             }
         </style>
 
-        <link rel="icon" href="https://du2.ru/wp-content/uploads/2025/05/logo.png" type="image/png">
-        <link rel="apple-touch-icon" href="https://du2.ru/wp-content/uploads/2025/05/logo.png">
+        <link rel="icon" href="/images/du2-logo.webp" type="image/webp">
+        <link rel="apple-touch-icon" href="/images/du2-logo.webp">
 
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
 

@@ -8,9 +8,9 @@ defineProps<{ className?: HTMLAttributes['class'] }>();
 
 <template>
     <img
-        src="https://du2.ru/wp-content/uploads/2025/05/logo.png"
+        src="/images/du2-logo.webp"
         alt="Школа Душноты"
-        :class="className"
+        :class="[className, 'object-contain']"
         v-bind="$attrs"
     />
 </template>

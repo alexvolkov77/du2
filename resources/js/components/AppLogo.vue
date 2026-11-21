@@ -1,6 +1,6 @@
 <template>
     <img
-        src="https://du2.ru/wp-content/uploads/2025/05/logo.png"
+        src="/images/du2-logo.webp"
         alt="Школа Душноты"
         class="size-8 shrink-0 rounded-md object-contain"
     />
