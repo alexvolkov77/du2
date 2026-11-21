@@ -60,17 +60,27 @@ if [[ "$WEBROOT" == "$APP_DIR" ]]; then
     exit 1
 fi
 
+LOGO_SOURCE="$APP_DIR/public/images/du2-logo.webp"
+LOGO_PUBLIC="$WEBROOT/images/du2-logo.webp"
+if [[ ! -s "$LOGO_SOURCE" ]]; then
+    echo "Отсутствует логотип в Git checkout: $LOGO_SOURCE" >&2
+    exit 1
+fi
+
 if [[ "$WEBROOT" != "$(cd "$APP_DIR/public" && pwd -P)" ]]; then
     mkdir -p "$WEBROOT/build"
     cp -a "$APP_DIR/public/build/." "$WEBROOT/build/"
 
-    # Publish local brand images when the hosting webroot is separate.
-    if [[ -d "$APP_DIR/public/images" ]]; then
-        mkdir -p "$WEBROOT/images"
-        cp -a "$APP_DIR/public/images/." "$WEBROOT/images/"
-    fi
+    # Hosting uses a separate public directory: publish brand assets too.
+    mkdir -p "$WEBROOT/images"
+    cp -a "$APP_DIR/public/images/." "$WEBROOT/images/"
 fi
-echo "Опубликовано: $WEBROOT/build и статические изображения"
+
+if [[ ! -s "$LOGO_PUBLIC" ]] || ! cmp -s "$LOGO_SOURCE" "$LOGO_PUBLIC"; then
+    echo "Не удалось опубликовать логотип: $LOGO_PUBLIC" >&2
+    exit 1
+fi
+echo "Опубликовано: $WEBROOT/build и $LOGO_PUBLIC"
 
 echo "[6/8] Проверка доступности CSS и JS через сайт"
 mapfile -t assets < <(php -r '
@@ -92,6 +102,16 @@ for asset in "${assets[@]}"; do
         exit 1
     fi
 done
+
+# A missing brand image should fail deployment, just like missing CSS/JS.
+LOGO_URL="https://$DOMAIN/images/du2-logo.webp"
+logo_status="$(curl -kLsS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Cache-Control: no-cache' "$LOGO_URL")" || true
+echo "HTTP $logo_status: $LOGO_URL"
+if [[ "$logo_status" != 200 ]]; then
+    echo "Логотип скопирован в $LOGO_PUBLIC, но URL возвращает HTTP $logo_status." >&2
+    echo "Проверь фактический document root, правила nginx/Apache и кэш на стороне хостинга." >&2
+    exit 1
+fi
 
 echo "[7/8] Миграции"
 php artisan migrate --force
