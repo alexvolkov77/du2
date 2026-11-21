@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Habit;
 use App\Models\TelegramLinkToken;
 use App\Models\UserIdentity;
 use Illuminate\Support\Facades\DB;
@@ -38,13 +39,36 @@ final class TelegramAccountLinker
                 ->where('provider_user_id', $telegramId)
                 ->first();
 
+            $merged = false;
+
             if ($telegramIdentity && $telegramIdentity->user_id !== $link->user_id) {
-                return 'Этот Telegram уже привязан к другому аккаунту.';
+                $oldUser = $telegramIdentity->user;
+                $temporaryEmail = 'telegram-'.$telegramId.'@users.lk.du2.invalid';
+
+                // Only accounts automatically created by the Telegram login flow may be merged.
+                if (! $oldUser || $oldUser->email !== $temporaryEmail
+                    || UserIdentity::query()
+                        ->where('user_id', $oldUser->id)
+                        ->where('id', '!=', $telegramIdentity->id)
+                        ->exists()) {
+                    return 'Этот Telegram уже привязан к другому аккаунту.';
+                }
+
+                // Move existing habits and their check-ins to the verified email account.
+                Habit::query()->where('user_id', $oldUser->id)->update(['user_id' => $link->user_id]);
+
+                $telegramIdentity->update([
+                    'user_id' => $link->user_id,
+                    'telegram_chat_id' => $chatId,
+                ]);
+
+                $oldUser->delete();
+                $merged = true;
             }
 
             if ($ownerIdentity) {
                 $ownerIdentity->update(['telegram_chat_id' => $chatId]);
-            } else {
+            } elseif (! $merged) {
                 UserIdentity::create([
                     'user_id' => $link->user_id,
                     'provider' => 'telegram',
@@ -56,7 +80,9 @@ final class TelegramAccountLinker
             $link->update(['used_at' => now()]);
             TelegramLinkToken::query()->where('user_id', $link->user_id)->whereNull('used_at')->delete();
 
-            return '✅ Telegram привязан! Привычки доступны на сайте и в Mini App. Напоминания тоже подключены.';
+            return $merged
+                ? '✅ Аккаунты объединены! Привычки из Telegram перенесены в email-аккаунт. Напоминания подключены.'
+                : '✅ Telegram привязан! Привычки доступны на сайте и в Mini App. Напоминания подключены.';
         });
     }
 }

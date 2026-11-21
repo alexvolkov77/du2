@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Habit;
 use App\Models\TelegramLinkToken;
 use App\Models\User;
 use App\Models\UserIdentity;
@@ -122,6 +123,39 @@ class TelegramAccountLinkTest extends TestCase
             'user_id' => $emailUser->id,
             'provider_user_id' => '12001',
         ]);
+    }
+
+    public function test_telegram_only_account_can_be_merged_without_losing_habits(): void
+    {
+        $emailUser = User::factory()->create(['email' => 'owner@example.com']);
+        $telegramUser = User::factory()->create(['email' => 'telegram-12001@users.lk.du2.invalid']);
+        $oldHabit = Habit::create(['user_id' => $telegramUser->id, 'name' => 'Привычка из Telegram']);
+        $emailHabit = Habit::create(['user_id' => $emailUser->id, 'name' => 'Привычка из email']);
+
+        UserIdentity::create([
+            'user_id' => $telegramUser->id,
+            'provider' => 'telegram',
+            'provider_user_id' => '12001',
+            'telegram_chat_id' => null,
+        ]);
+
+        $token = $this->issueLink($emailUser);
+        $this->sendStart($token, '12001');
+
+        $this->assertDatabaseHas('user_identities', [
+            'user_id' => $emailUser->id,
+            'provider_user_id' => '12001',
+            'telegram_chat_id' => '12001',
+        ]);
+        $this->assertDatabaseHas('habits', [
+            'id' => $oldHabit->id,
+            'user_id' => $emailUser->id,
+        ]);
+        $this->assertDatabaseHas('habits', [
+            'id' => $emailHabit->id,
+            'user_id' => $emailUser->id,
+        ]);
+        $this->assertDatabaseMissing('users', ['id' => $telegramUser->id]);
     }
 
     public function test_new_link_invalidates_the_previous_one(): void
